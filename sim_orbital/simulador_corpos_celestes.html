@@ -28,10 +28,12 @@
 
 body{
 	padding: 20px;
-	background-color: #22313F;
+	background-color: #bbbbbb;
 }
 
-
+.panel-body{
+	background-color: #22313F;
+}
 
 </style>
 
@@ -40,193 +42,156 @@ body{
 	<script type="text/paperscript" canvas="meuCanvas">
 	
 	var corpos;
-
+	
 	$(function(){
 		inicializacao();
 		instalarGlobais();
 	});
-
+	// MÉTODOS DE CRIAÇÃO --------------------------------------------------------------- 
 	function instalarGlobais(){
 		window.globais = {
 			adicionarCorpo: function(corpo){
-				corpos.push(new Path.Circle({
-					center: [corpo.posicao.x, corpo.posicao.y],
-					radius: corpo.massa/10,
-					strokeColor: corpo.cor,
-				}));
+				corpos.push({
+					corpoView: criarViewCorpo(corpo),
+					vetorView: criarViewVetor(corpo),
+				});
 				paper.view.draw();
 			},
 
 			removerCorpo: function(index){
-				corpos[index].remove();
+				//corpos[index].remove();
 				corpos.splice(index, 1);
 				paper.view.draw();
 			}
-
 		};
+	}
+
+	function criarViewCorpo(corpo){
+		var novoCorpo = new Path.Circle({
+						center: [corpo.posicao.x, corpo.posicao.y],
+						radius: corpo.massa/10,
+						strokeColor: corpo.cor,
+						fillColor: corpo.cor
+					});
+		return novoCorpo;
+	}
+
+	function criarViewVetor(corpo){
+		var novoVetor = {};
+		var ponta = new Point(corpo.posicao.x, corpo.posicao.y - 40);
+		var cauda = new Point(corpo.posicao.x, corpo.posicao.y);
+		novoVetor.segmentos = criarViewSegmentosVetor(ponta, cauda);
+		novoVetor.pontilhados = criarViewPontilhadosVetor(ponta, cauda);
+		novoVetor.bolinha = criarViewBolinha(ponta);
+		return novoVetor;
+	}
+
+	function criarViewPontilhadosVetor(ponta, cauda){
+
+	}
+
+	function criarViewSegmentosVetor(ponta, cauda){
+		var vetor = ponta - cauda;
+		var flecha = vetor.normalize(10);
+		var segmentos = new Group([
+			new Path([ponta, cauda]),
+			new Path([
+				ponta + flecha.rotate(135),
+				ponta,
+				ponta + flecha.rotate(-135)
+			])
+		]);
+		segmentos.strokeColor = '#f1c40f';
+		return segmentos;
+	}
+
+	function criarViewBolinha(ponta){
+		var bolinha = new Path.Circle({
+				center: [ponta.x, ponta.y],
+				radius: 5,
+				fillColor : new Color(1, 1, 1,0.3),
+				strokeColor : new Color(1, 1, 1,0.3)
+		});
+		return bolinha;
 	}
 
 	function inicializacao(){
 		corpos = new Array();
 		paper.view.setCenter(new Point(0,0));
 	}
-
-	//vetores
-		var values = {
+	// DESENHO DO VETOR
+	// MÉTODOS DE MANIPULAÇÃO DE CORPOS CELESTES E VETORES
+	var values = {
 		fixLength: false,
 		fixAngle: false,
 		showCircle: false,
 		showAngleLength: true,
-		showCoordinates: false
+		showCoordinates: false,
+		paths: 50,
+		minPoints: 5,
+		maxPoints: 15,
+		minRadius: 30,
+		maxRadius: 90
 	};
 
-	var vectorStart, vector, vectorPrevious;
-	var vectorItem, items, dashedItems;
-
-	function processVector(event, drag) {
-		vector = event.point - vectorStart;
-		if (vectorPrevious) {
-			if (values.fixLength && values.fixAngle) {
-				vector = vectorPrevious;
-			} else if (values.fixLength) {
-				vector.length = vectorPrevious.length;
-			} else if (values.fixAngle) {
-				vector = vector.project(vectorPrevious);
-			}
-		}
-		drawVector(drag);
+	function criarVetor(modelo){
 	}
 
-	function drawVector(drag) {
-		if (items) {
-			for (var i = 0, l = items.length; i < l; i++) {
-				items[i].remove();
-			}
-		}
-		if (vectorItem)
-			vectorItem.remove();
-		items = [];
-		var arrowVector = vector.normalize(10);
-		var end = vectorStart + vector;
-		vectorItem = new Group([
-			new Path([vectorStart, end]),
-			new Path([
-				end + arrowVector.rotate(135),
-				end,
-				end + arrowVector.rotate(-135)
-			])
-		]);
-		vectorItem.strokeWidth = 0.75;
-		vectorItem.strokeColor = '#e4141b';
-		// Display:
-		dashedItems = [];
-		// Draw Circle
-		if (values.showCircle) {
-			dashedItems.push(new Path.Circle({
-				center: vectorStart,
-				radius: vector.length
-			}));
-		}
-		// Draw Labels
-		if (values.showAngleLength) {
-			//ROMENIG drawAngle(vectorStart, vector, !drag);
-			if (!drag)
-				drawLength(vectorStart, end, vector.angle < 0 ? -1 : 1, true);
-		}
-		var quadrant = vector.quadrant;
-		if (values.showCoordinates && !drag) {
-			drawLength(vectorStart, vectorStart + [vector.x, 0],
-					[1, 3].indexOf(quadrant) != -1 ? -1 : 1, true, vector.x, 'x: ');
-			drawLength(vectorStart, vectorStart + [0, vector.y], 
-					[1, 3].indexOf(quadrant) != -1 ? 1 : -1, true, vector.y, 'y: ');
-		}
-		for (var i = 0, l = dashedItems.length; i < l; i++) {
-			var item = dashedItems[i];
-			item.strokeColor = 'black';
-			item.dashArray = [1, 2];
-			items.push(item);
-		}
-		// Update palette
-		values.x = vector.x;
-		values.y = vector.y;
-		values.length = vector.length;
-		values.angle = vector.angle;
-	}
+	var segment, path;
+	var movePath = false;
 
-	function drawLength(from, to, sign, label, value, prefix) {
-		var lengthSize = 5;
-		if ((to - from).length < lengthSize * 4)
-			return;
-		var vector = to - from;
-		var awayVector = vector.normalize(lengthSize).rotate(90 * sign);
-		var upVector = vector.normalize(lengthSize).rotate(45 * sign);
-		var downVector = upVector.rotate(-90 * sign);
-		var lengthVector = vector.normalize(
-				vector.length / 2 - lengthSize * Math.sqrt(2));
-		var line = new Path();
-		line.add(from + awayVector);
-		line.lineBy(upVector);
-		line.lineBy(lengthVector);
-		line.lineBy(upVector);
-		var middle = line.lastSegment.point;
-		line.lineBy(downVector);
-		line.lineBy(lengthVector);
-		line.lineBy(downVector);
-		dashedItems.push(line);
-		if (label) {
-			// Length Label
-			var textAngle = Math.abs(vector.angle) > 90
-					? textAngle = 180 + vector.angle : vector.angle;
-			// Label needs to move away by different amounts based on the
-			// vector's quadrant:
-			var away = (sign >= 0 ? [1, 4] : [2, 3]).indexOf(vector.quadrant) != -1
-					? 8 : 0;
-			value = value || vector.length;
-			var text = new PointText({
-				point: middle + awayVector.normalize(away + lengthSize),
-				content: "F = "+(prefix || '') + Math.floor(value * 1000) / 1000 + " N",
-				fillColor: 'black',
-				justification: 'center'
-			});
-			text.rotate(textAngle);
-			items.push(text);
-		}
-	}
-
-	var dashItem;
+	var opcoesDoClique = {
+		segments: true,
+		stroke: true,
+		fill: true,
+		tolerance: 2
+	};
 
 	function onMouseDown(event) {
-		var end = vectorStart + vector;
-		var create = false;
-		if (event.modifiers.shift && vectorItem) {
-			vectorStart = end;
-			create = true;
-		} else if (vector && (event.modifiers.option
-				|| end && end.getDistance(event.point) < 10)) {
-			create = false;
-		} else {
-			vectorStart = event.point;
+		var resultadoDoClique = project.hitTest(event.point, opcoesDoClique);
+		if (!resultadoDoClique){
+			return;
+		}else{
+			if(verificaAlvo(resultadoDoClique.item) == "corpo_celeste"){
+				console.log(resultadoDoClique.item);
+				console.log("clicou no corpo celeste");
+			}else if(verificaAlvo(resultadoDoClique.item) == "vetor"){
+				console.log(resultadoDoClique.item);
+				console.log("clicou no vetor");
+			}
 		}
-		if (create) {
-			dashItem = vectorItem;
-			vectorItem = null;
+			
+	}
+
+	function verificaAlvo(alvo){
+		for(var i = 0; i < corpos.length; i++){
+			if(corpos[i].corpoView == alvo) return "corpo_celeste";
+			if(corpos[i].vetorView.bolinha == alvo) return "vetor";
 		}
-		processVector(event, true);
+	}
+
+	function clicouNoCorpo(event){
+		segment = path = null;
+		var resultadoDoClique = project.hitTest(event.point, opcoesDoClique);
+		if (!resultadoDoClique)
+			return;
+		movePath = resultadoDoClique.type == 'fill' || resultadoDoClique.type == 'stroke';
+		if (movePath){
+			path = resultadoDoClique.item;
+			project.activeLayer.addChild(resultadoDoClique.item);
+		}
+			
 	}
 
 	function onMouseDrag(event) {
-		if (!event.modifiers.shift && values.fixLength && values.fixAngle)
-			vectorStart = event.point;
-		processVector(event, event.modifiers.shift);
+		mouseDragCorposProcessingMethods(event);
+		//mouseDragVectorProcessingMethods(event);
 	}
 
-	function onMouseUp(event) {
-		processVector(event, false);
-		if (dashItem) {
-			dashItem.dashArray = [1, 2];
-			dashItem = null;
+	function mouseDragCorposProcessingMethods(event){
+		if (path) {
+			path.position += event.delta;
 		}
-		vectorPrevious = vector;
 	}
 
 	</script>
