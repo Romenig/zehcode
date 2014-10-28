@@ -35,6 +35,10 @@ body{
 	background-color: #22313F;
 }
 
+.ng-binding{
+	color:white;
+}
+
 </style>
 
 </head>
@@ -81,13 +85,8 @@ body{
 		var ponta = new Point(corpo.posicao.x, corpo.posicao.y - 40);
 		var cauda = new Point(corpo.posicao.x, corpo.posicao.y);
 		novoVetor.segmentos = criarViewSegmentosVetor(ponta, cauda);
-		novoVetor.pontilhados = criarViewPontilhadosVetor(ponta, cauda);
 		novoVetor.bolinha = criarViewBolinha(ponta);
 		return novoVetor;
-	}
-
-	function criarViewPontilhadosVetor(ponta, cauda){
-
 	}
 
 	function criarViewSegmentosVetor(ponta, cauda){
@@ -102,6 +101,7 @@ body{
 			])
 		]);
 		segmentos.strokeColor = '#f1c40f';
+		segmentos.sendToBack();
 		return segmentos;
 	}
 
@@ -150,23 +150,10 @@ body{
 	function onMouseDown(event) {
 		var resultadoDoClique = project.hitTest(event.point, opcoesDoClique);
 		if (!resultadoDoClique){
+			path = null;
 			return;
-		}else{
-			if(verificaAlvo(resultadoDoClique.item) == "corpo_celeste"){
-				console.log(resultadoDoClique.item);
-				console.log("clicou no corpo celeste");
-			}else if(verificaAlvo(resultadoDoClique.item) == "vetor"){
-				console.log(resultadoDoClique.item);
-				console.log("clicou no vetor");
-			}
-		}
-			
-	}
-
-	function verificaAlvo(alvo){
-		for(var i = 0; i < corpos.length; i++){
-			if(corpos[i].corpoView == alvo) return "corpo_celeste";
-			if(corpos[i].vetorView.bolinha == alvo) return "vetor";
+		} else{
+			path = resultadoDoClique.item;
 		}
 	}
 
@@ -180,17 +167,61 @@ body{
 			path = resultadoDoClique.item;
 			project.activeLayer.addChild(resultadoDoClique.item);
 		}
-			
+	}
+
+	function onMouseMove(event) {
+		project.activeLayer.selected = false;
+	}	
+
+	function onMouseUp(event){
+		path = null;
 	}
 
 	function onMouseDrag(event) {
-		mouseDragCorposProcessingMethods(event);
-		//mouseDragVectorProcessingMethods(event);
+		if(verificaAlvo(path) == "corpo_celeste"){
+			atualizarPosicaoDoCorpo(event);
+		}else if(verificaAlvo(path) == "vetor"){
+			atualizarPosicaoDoVetor(event);
+		}
 	}
 
-	function mouseDragCorposProcessingMethods(event){
+	function verificaAlvo(alvo){
+		for(var i = 0; i < corpos.length; i++){
+			if(corpos[i].corpoView == alvo) { return "corpo_celeste"; break;}
+			if(corpos[i].vetorView.bolinha == alvo){ return "vetor"; break;}
+		}
+	}
+
+	function atualizarPosicaoDoVetor(event){
+		var posicao = 0;
 		if (path) {
-			path.position += event.delta;
+			for(var i = 0; i < corpos.length; i++){
+				if(corpos[i].vetorView.bolinha == path){
+					posicao = i;
+					break;
+				}
+			}
+			corpos[posicao].vetorView.bolinha.position +=event.delta;
+			corpos[posicao].vetorView.segmentos.remove();
+			var ponta = corpos[posicao].vetorView.bolinha.position;
+			var cauda = corpos[posicao].corpoView.position;
+			corpos[posicao].vetorView.segmentos =  criarViewSegmentosVetor(ponta, cauda);
+			corpos[posicao].vetorView.segmentos.sendToBack(); 
+		}
+	}
+
+	function atualizarPosicaoDoCorpo(event){
+		var posicao = 0;
+		if (path) {
+			for(var i = 0; i < corpos.length; i++){
+				if(corpos[i].corpoView == path){
+					posicao = i;
+					break;
+				}
+			}
+			corpos[posicao].corpoView.position += event.delta;
+			corpos[posicao].vetorView.segmentos.position += event.delta;
+			corpos[posicao].vetorView.bolinha.position += event.delta;
 		}
 	}
 
