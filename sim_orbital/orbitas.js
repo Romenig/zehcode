@@ -20,5 +20,18 @@ angular.module('orbitasApp', []).
 				window.globais.removerCorpo($scope.corpos.indexOf(corpo));
 				$scope.corpos.splice($scope.corpos.indexOf(corpo),1);
 			}
+
+			$scope.play = function(){
+				window.globais.play();
+			}
+
+			$scope.pause = function(){
+				window.globais.pause();
+			}
+
+			$scope.resetSimulator = function(){
+				window.globais.resetSimulator();
+			}
+
 		}
 	]);

@@ -46,7 +46,8 @@ body{
 	<script type="text/paperscript" canvas="meuCanvas">
 	
 	var corpos;
-	
+	var playing = false;
+
 	$(function(){
 		inicializacao();
 		instalarGlobais();
@@ -63,9 +64,21 @@ body{
 			},
 
 			removerCorpo: function(index){
-				//corpos[index].remove();
+				corpos[index].remove();
 				corpos.splice(index, 1);
 				paper.view.draw();
+			},
+
+			play: function(){
+				playing = true;
+			},
+
+			pause: function(){
+				playing = false;
+			},
+
+			resetSimulator: function(){
+				
 			}
 		};
 	}
@@ -133,9 +146,6 @@ body{
 		minRadius: 30,
 		maxRadius: 90
 	};
-
-	function criarVetor(modelo){
-	}
 
 	var segment, path;
 	var movePath = false;
@@ -225,6 +235,22 @@ body{
 		}
 	}
 
+	function onFrame(){
+		if(playing){
+			for(var i = 0; i < corpos.length - 1; i++){
+				for( var j = 1; j < corpos.length; j++){
+
+				}
+			}
+		}
+	}
+
+	function atualizarMovimento(corpoA, corpoB){
+		var mA = corpoA.massa;
+		var mB = corpoB.massa;
+		
+	}
+
 	</script>
 	<div ng-controller="OrbitasController">
 		<div class="panel panel-default">
@@ -238,9 +264,9 @@ body{
 						</div>
 						<div class="col-md-3">
 							<div class="btn-group btn-group-justified">
-						    	<a class="btn btn-success" role="button"><span class="glyphicon glyphicon-play" ></span></a>
-						    	<a class="btn btn-warning" role="button"><span class="glyphicon glyphicon-pause" ></span></a>
-						    	<a class="btn btn-danger" role="button"><span class="glyphicon glyphicon-refresh" ></span></a>
+						    	<a ng-click="play();" class="btn btn-success" role="button"><span class="glyphicon glyphicon-play" ></span></a>
+						    	<a ng-click="pause();"class="btn btn-warning" role="button"><span class="glyphicon glyphicon-pause" ></span></a>
+						    	<a ng-click="resetSimulator();"class="btn btn-danger" role="button"><span class="glyphicon glyphicon-refresh" ></span></a>
 						    </div>
 							</br>
 							<button type="button" class="btn btn-primary btn-block" ng-click="adicionarCorpo();">
